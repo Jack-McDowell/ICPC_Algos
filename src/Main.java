@@ -1,4 +1,9 @@
+import java.awt.*;
 import java.util.*;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
     public static void main(String[] args){
@@ -303,6 +308,77 @@ class GraphTheory {
         }
     }
 }
+class Geometry {
+    static class ClosestPairOfPoints {
+        public static double closestPair(ArrayList<Point> points){
+            Collections.sort(points, (p1, p2) -> Integer.compare(p1.x, p2.x));
+            return closestPair(points, 0, points.size());
+        }
+        public static double closestPair(ArrayList<Point> points, int start, int end){
+            if(end - start == 2)
+                return Math.sqrt(Math.pow(points.get(0).x - points.get(1).x, 2) + Math.pow(points.get(0).y - points.get(1).y, 2));
+            else if(end - start == 1){
+                return Double.MAX_VALUE;
+            } else {
+                int midY = points.get((end + start) / 2).x;
+                double lim = Math.min(closestPair(points, start, (start + end) / 2), closestPair(points, (start + end) / 2, end));
+                List<Point> middle = points.stream().filter(p -> Math.abs(p.y - midY) < lim).sorted((p1, p2) -> Integer.compare(p1.y, p2.y)).collect(Collectors.toList());
+                double crossLine = lim;
+                for(int i = 0; i < middle.size(); i++){
+                    for(int j = i + 1; j < middle.size() && middle.get(j).y - middle.get(i).y < crossLine; j++){
+                        crossLine = Math.min(crossLine, Math.sqrt(Math.pow(points.get(i).x - points.get(j).x, 2) + Math.pow(points.get(i).y - points.get(j).y, 2)));
+                    }
+                }
+                return Math.min(crossLine, lim);
+            }
+        }
+    }
+    static class Triangulation {
+        public static ArrayList<Polygon> convex(Polygon p){
+            Point vertex = new Point(p.xpoints[0], p.ypoints[0]);
+            ArrayList<Polygon> triangles = new ArrayList<>(p.npoints - 2);
+            for(int i = 1; i < p.npoints - 1; i++){
+                triangles.add(new Polygon( new int[]{vertex.x, p.xpoints[i], p.xpoints[i + 1]}, new int[]{vertex.y, p.ypoints[i], p.ypoints[i + 1]}, 3));
+            }
+            return triangles;
+        }
+
+    }
+    static class ConvexHull {
+        public static int ord(Point p, Point q, Point r) {
+            int val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+            if (val == 0) return 0;
+            return (val > 0)? 1: 2;
+        }
+        public static Polygon convexHull(ArrayList<Point> points){
+            int pointCount = points.size();
+            if(pointCount < 3)
+                return null;
+            Point bottomLeft = points.stream().min((p1, p2) -> Integer.compare(p1.y, p2.y) * 2 + Integer.compare(p1.x, p2.x)).get();
+            Function<Point, Double> getAngle = (p) -> (Math.atan2(p.y - bottomLeft.y, p.x - bottomLeft.x) + Math.PI) % Math.PI;
+            PriorityQueue<Point> polar = new PriorityQueue<>(Comparator.comparingDouble(getAngle::apply));
+            points.stream().filter(p -> p != bottomLeft).forEach(p -> polar.add(p));
+            Point old = bottomLeft;
+            Polygon p = new Polygon();
+            while(!polar.isEmpty()) {
+                Point current = polar.poll();
+                while(!polar.isEmpty() && ord(old, current, polar.poll()) == 0) {
+                    current = Math.sqrt(Math.pow(polar.peek().x - old.x, 2) + Math.pow(polar.peek().y - old.y, 2)) >
+                            Math.sqrt(Math.pow(current.x - old.x, 2) + Math.pow(current.y - old.y, 2)) ? polar.peek() : current;
+                    polar.poll();
+                }
+                Point next = polar.peek();
+                if(ord(old, current, next) == 1){
+                    p.addPoint(old.x, old.y);
+                    old = current;
+                }
+            }
+            return p;
+        }
+    }
+}
+class Dynamic {}
 class Other {
     static class UnionFind {
         private int[] parent;
